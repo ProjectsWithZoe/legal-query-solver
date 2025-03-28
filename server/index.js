@@ -1,53 +1,61 @@
 const express = require('express');
 const multer = require('multer');
 const cors = require('cors');
+const admin = require('./firebase-config');
 const path = require('path');
 
 const app = express();
 app.use(cors());
 
-// Configure multer for file storage
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/') // Files will be stored in an 'uploads' directory
-  },
-  filename: function (req, file, cb) {
-    // Create unique filename with timestamp
-    cb(null, Date.now() + '-' + file.originalname)
-  }
-});
-
-// File filter to only allow PDFs
-const fileFilter = (req, file, cb) => {
-  if (file.mimetype === 'application/pdf') {
-    cb(null, true);
-  } else {
-    cb(new Error('Only PDF files are allowed!'), false);
-  }
-};
-
-const upload = multer({ 
-  storage: storage,
-  fileFilter: fileFilter,
+// Configure multer for memory storage
+const upload = multer({
+  storage: multer.memoryStorage(),
   limits: {
     fileSize: 5 * 1024 * 1024 // 5MB limit
   }
 });
 
 // Handle file upload
-app.post('/api/upload', upload.single('file'), (req, res) => {
+app.post('/api/upload', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    // Return file information
-    res.json({
-      message: 'File uploaded successfully',
-      filename: req.file.filename,
-      path: req.file.path
+    const bucket = admin.storage().bucket();
+    const fileName = Date.now() + '-' + req.file.originalname;
+    const file = bucket.file(fileName);
+
+    // Create a write stream and upload the file
+    const stream = file.createWriteStream({
+      metadata: {
+        contentType: req.file.mimetype,
+      },
     });
+
+    stream.on('error', (err) => {
+      console.error(err);
+      res.status(500).json({ error: 'Error uploading file' });
+    });
+
+    stream.on('finish', async () => {
+      // Make the file publicly accessible
+      await file.makePublic();
+      
+      // Get the public URL
+      const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+      
+      res.json({
+        message: 'File uploaded successfully',
+        fileName: fileName,
+        url: publicUrl
+      });
+    });
+
+    stream.end(req.file.buffer);
+
   } catch (error) {
+    console.error('Error:', error);
     res.status(500).json({ error: 'Error uploading file' });
   }
 });
