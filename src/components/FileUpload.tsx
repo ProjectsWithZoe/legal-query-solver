@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FileUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { uploadFile } from '@/lib/api';
 
 const FileUpload = ({ onFileUpload }: { onFileUpload: (file: File) => void }) => {
   const [fileName, setFileName] = useState<string | null>(null);
@@ -19,8 +20,8 @@ const FileUpload = ({ onFileUpload }: { onFileUpload: (file: File) => void }) =>
     }
   };
 
-  const handleFile = (file: File) => {
-    // Check if it's a PDF, DOCX, or TXT file
+  const handleFile = async (file: File) => {
+    // Check if it's a PDF file
     const validTypes = ['application/pdf'];
     if (!validTypes.includes(file.type)) {
       toast.error('Please upload a PDF file');
@@ -32,10 +33,20 @@ const FileUpload = ({ onFileUpload }: { onFileUpload: (file: File) => void }) =>
       toast.error('File size must be less than 5MB');
       return;
     }
-    
-    setFileName(file.name);
-    onFileUpload(file);
-    toast.success('File uploaded successfully');
+
+    try {
+      // Send file to backend
+      const response = await uploadFile(file);
+      
+      if (response.status === 200) {
+        setFileName(file.name);
+        onFileUpload(file);
+        toast.success('File uploaded successfully');
+      }
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      toast.error('Failed to upload file. Please try again.');
+    }
   };
   
   const handleDragOver = (e: React.DragEvent) => {
