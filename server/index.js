@@ -2,14 +2,18 @@ const express = require('express');
 const multer = require('multer');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
+require('dotenv').config();
 
 const app = express();
 app.use(cors());
 
-// Initialize Supabase client
+// Add error logging
+console.log('Supabase URL:', process.env.SUPABASE_URL);
+console.log('Supabase Key exists:', !!process.env.SUPABASE_ANON_KEY);
+
 const supabase = createClient(
-  'your-supabase-url',     // Get from Supabase dashboard
-  'your-supabase-anon-key' // Get from Supabase dashboard
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY
 );
 
 // Configure multer for memory storage
@@ -27,6 +31,12 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
+    console.log('File received:', {
+      name: req.file.originalname,
+      size: req.file.size,
+      type: req.file.mimetype
+    });
+
     // Upload file to Supabase Storage
     const { data, error } = await supabase.storage
       .from('contracts') // bucket name
@@ -39,7 +49,10 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
         }
       );
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase upload error:', error);
+      return res.status(500).json({ error: error.message });
+    }
 
     // Get public URL
     const { data: { publicUrl } } = supabase.storage
@@ -53,8 +66,11 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({ error: 'Error uploading file' });
+    console.error('Detailed error:', error);
+    res.status(500).json({ 
+      error: 'Error uploading file',
+      details: error.message 
+    });
   }
 });
 
