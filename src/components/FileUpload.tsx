@@ -6,6 +6,7 @@ import { uploadFile } from '@/lib/api';
 
 const FileUpload = ({ onFileUpload }: { onFileUpload: (file: File) => void }) => {
   const [fileName, setFileName] = useState<string | null>(null);
+  const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   
@@ -40,6 +41,7 @@ const FileUpload = ({ onFileUpload }: { onFileUpload: (file: File) => void }) =>
       
       if (response.status === 200) {
         setFileName(file.name);
+        setFileUrl(response.data.url);
         onFileUpload(file);
         toast.success('File uploaded successfully');
       }
@@ -103,9 +105,17 @@ const FileUpload = ({ onFileUpload }: { onFileUpload: (file: File) => void }) =>
           </label>
         </div>
         
-        {fileName && (
+        {fileName && fileUrl && (
           <div className="mt-4 p-2 bg-law-light-gray rounded text-law-blue">
             <p className="text-sm truncate">{fileName}</p>
+            <a 
+              href={fileUrl} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-xs text-law-blue hover:underline"
+            >
+              View uploaded file
+            </a>
           </div>
         )}
       </div>

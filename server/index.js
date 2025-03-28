@@ -1,11 +1,16 @@
 const express = require('express');
 const multer = require('multer');
 const cors = require('cors');
-const admin = require('./firebase-config');
-const path = require('path');
+const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
 app.use(cors());
+
+// Initialize Supabase client
+const supabase = createClient(
+  'your-supabase-url',     // Get from Supabase dashboard
+  'your-supabase-anon-key' // Get from Supabase dashboard
+);
 
 // Configure multer for memory storage
 const upload = multer({
@@ -22,37 +27,30 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    const bucket = admin.storage().bucket();
-    const fileName = Date.now() + '-' + req.file.originalname;
-    const file = bucket.file(fileName);
+    // Upload file to Supabase Storage
+    const { data, error } = await supabase.storage
+      .from('contracts') // bucket name
+      .upload(
+        `${Date.now()}-${req.file.originalname}`, 
+        req.file.buffer,
+        {
+          contentType: req.file.mimetype,
+          cacheControl: '3600'
+        }
+      );
 
-    // Create a write stream and upload the file
-    const stream = file.createWriteStream({
-      metadata: {
-        contentType: req.file.mimetype,
-      },
+    if (error) throw error;
+
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('contracts')
+      .getPublicUrl(data.path);
+
+    res.json({
+      message: 'File uploaded successfully',
+      fileName: req.file.originalname,
+      url: publicUrl
     });
-
-    stream.on('error', (err) => {
-      console.error(err);
-      res.status(500).json({ error: 'Error uploading file' });
-    });
-
-    stream.on('finish', async () => {
-      // Make the file publicly accessible
-      await file.makePublic();
-      
-      // Get the public URL
-      const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
-      
-      res.json({
-        message: 'File uploaded successfully',
-        fileName: fileName,
-        url: publicUrl
-      });
-    });
-
-    stream.end(req.file.buffer);
 
   } catch (error) {
     console.error('Error:', error);
