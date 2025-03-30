@@ -9,9 +9,10 @@ const FileUpload = ({
 }: {
   onFileUpload: (fileId: string, fileUrl: string) => void;
 }) => {
-  const [fileName, setFileName] = useState<string | null>(null);
+  const [fileName, setFileName] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const fileInputRef = React.useRef(null);
+  const [isuploading, setIsUploading] = useState(false);
 
   const handleBrowseClick = () => {
     fileInputRef.current?.click();
@@ -32,7 +33,9 @@ const FileUpload = ({
       }
 
       // Upload to FastAPI backend
+      setIsUploading(true);
       const response = await uploadFile(file);
+
       console.log(response.data);
 
       if (response.data.error) {
@@ -41,6 +44,7 @@ const FileUpload = ({
 
       setFileName(file.name);
       onFileUpload(response.data.file_id, response.data.file_url);
+      setIsUploading(false);
       toast.success("File uploaded successfully");
     } catch (error) {
       console.error("Error uploading file:", error);
@@ -94,7 +98,7 @@ const FileUpload = ({
               variant="outline"
               className="bg-white hover:bg-law-light-gray border-law-gray text-law-blue"
             >
-              Browse Files
+              {isuploading ? "Uploading..." : "Browse Files"}
             </Button>
             <input
               ref={fileInputRef}
