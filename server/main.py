@@ -19,7 +19,7 @@ app = FastAPI()
 # CORS setup
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5175"], #change this on prod
+    allow_origins=["https://contracts-project.vercel.app"], #change this on prod
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
