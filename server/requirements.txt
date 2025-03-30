@@ -8,3 +8,4 @@ pdfplumber
 tiktoken
 scikit-learn
 numpy
+gunicorn==20.1.0
