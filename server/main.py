@@ -86,8 +86,7 @@ def retrieve_similar_chunks(query, embeddings, chunks, vectorizer, top_k=5):
 
 def query_chatgpt(query, similar_chunks):
     context = "\n".join(similar_chunks)
-    
-    # Define a structured prompt
+    # Add explicit instructions to prevent hallucinations
     prompt = f"""Based STRICTLY on the provided context from the PDF document, please answer the question.
 If the information cannot be found in the context, respond with 'Information not found in document.'
 Do not make assumptions or use external knowledge.
@@ -95,63 +94,33 @@ Do not make assumptions or use external knowledge.
 Context: {context}
 
 Question: {query}
-"""
 
-    # Define function calls separately
-    functions = [
-        {
-            "name": "extract_date",
-            "description": "Extracts a date from the document with confidence and source text.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "date": {"type": "string", "description": "The extracted date in YYYY-MM-DD format."},
-                    "confidence": {"type": "string", "enum": ["HIGH", "MEDIUM", "LOW"], "description": "Confidence level of the extracted date."},
-                    "source_text": {"type": "string", "description": "The exact text from the document containing the date."}
-                },
-                "required": ["date", "confidence", "source_text"]
-            }
-        },
-        {
-            "name": "extract_data",
-            "description": "Extracts relevant data from the document.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "data": {"type": "string", "description": "The extracted data as a string."},
-                    "confidence": {"type": "string", "enum": ["HIGH", "MEDIUM", "LOW"], "description": "Confidence level of the extracted data."},
-                    "source_text": {"type": "string", "description": "The exact text from the document containing the data."}
-                },
-                "required": ["data", "confidence", "source_text"]
-            }
-        }
-    ]
+If the question is about a date, please return it in the format:
+{{
+    "date": "YYYY-MM-DD",
+    "confidence": "HIGH/MEDIUM/LOW",
+    "source_text": "exact text from context that contains this date"
+}}
 
-    # Send request to OpenAI
+If the question is not about a date, provide a direct answer using only information from the context."""
+
     response = client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[
             {"role": "system", "content": "You are a precise document analyzer. Only use information from the provided context."},
             {"role": "user", "content": prompt} 
         ],
-        functions=functions,  # Pass functions as structured data
+        
         function_call="auto",  # Let GPT decide when to use the function
-        temperature=0.3  # Lower temperature for more deterministic responses
+        
+        temperature=0.3  # Lower temperature for more focused responses
     )
-
-    # Check if a function was called
+      # If function call is triggered, extract the date
     if response.choices[0].message.function_call:
-        function_name = response.choices[0].message.function_call.name
         function_args = response.choices[0].message.function_call.arguments
-
-        if function_name == "extract_date":
-            return f"Effective Date: {function_args['date']}\nConfidence: {function_args['confidence']}\nSource: {function_args['source_text']}"
-        elif function_name == "extract_data":
-            return f"Extracted Data: {function_args['data']}\nConfidence: {function_args['confidence']}\nSource: {function_args['source_text']}"
-
-    # If no function was called, return GPT's direct response
+        return f"Effective Date: {function_args['date']}\nConfidence: {function_args['confidence']}\nSource: {function_args['source_text']}"
+    
     return response.choices[0].message.content.strip()
-
     
 
 # Storage for processed files
