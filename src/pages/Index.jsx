@@ -31,7 +31,7 @@ const Index = () => {
     const response = await analyzeDocument(queryText, uploadedFile);
     console.log(response.answer);
 
-    setResponse(response.answer);
+    setResponse(response.answer.replace("{", " ").replace("}", " "));
     setIsLoading(false);
     // Show a toast notification for the response
     toast.success("Response received!");
