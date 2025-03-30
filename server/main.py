@@ -110,23 +110,8 @@ If the question is not about a date, provide a direct answer using only informat
             {"role": "system", "content": "You are a precise document analyzer. Only use information from the provided context."},
             {"role": "user", "content": prompt} 
         ],
-        functions=[
-            {
-                "name": "extract_date",
-                "description": "Extracts a date from the document with confidence and source text.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "date": {"type": "string", "description": "The extracted date in YYYY-MM-DD format."},
-                        "confidence": {"type": "string", "enum": ["HIGH", "MEDIUM", "LOW"], "description": "Confidence level of the extracted date."},
-                        "source_text": {"type": "string", "description": "The exact text from the document containing the date."}
-                    },
-                    "required": ["date", "confidence", "source_text"]
-                }
-            }
-        ],
-        function_call="auto",  # Let GPT decide when to use the function
         
+       
         temperature=0.3  # Lower temperature for more focused responses
     )
       # If function call is triggered, extract the date
