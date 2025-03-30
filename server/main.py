@@ -19,7 +19,8 @@ app = FastAPI()
 # CORS setup
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://contracts-project.vercel.app"], #change this on prod
+    allow_origins=["https://contracts-project.vercel.app"
+], #change this on prod
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -108,18 +109,10 @@ If the question is not about a date, provide a direct answer using only informat
         model="gpt-3.5-turbo",
         messages=[
             {"role": "system", "content": "You are a precise document analyzer. Only use information from the provided context."},
-            {"role": "user", "content": prompt} 
+            {"role": "user", "content": prompt}
         ],
-        
-        function_call="auto",  # Let GPT decide when to use the function
-        
         temperature=0.3  # Lower temperature for more focused responses
     )
-      # If function call is triggered, extract the date
-    if response.choices[0].message.function_call:
-        function_args = response.choices[0].message.function_call.arguments
-        return f"Effective Date: {function_args['date']}\nConfidence: {function_args['confidence']}\nSource: {function_args['source_text']}"
-    
     return response.choices[0].message.content.strip()
     
 
@@ -174,7 +167,7 @@ async def upload_file(file: UploadFile = File(...)):
             "file_path": file_path
         }
 
-        print(pdf_storage)
+        #print(pdf_storage)
         
         return {
             "file_id": file_id,
