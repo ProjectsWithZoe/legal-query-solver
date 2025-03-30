@@ -15,6 +15,7 @@ const FileUpload = ({
   const [isuploading, setIsUploading] = useState(false);
 
   const handleBrowseClick = () => {
+    setFileName(null);
     fileInputRef.current?.click();
   };
 
