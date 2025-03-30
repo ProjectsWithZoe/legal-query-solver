@@ -119,7 +119,6 @@ pyasn1-modules==0.2.8
 PyAutoGUI==0.9.54
 pydantic==2.1.1
 pydantic_core==2.4.0
-pygame==2.1.2
 PyGetWindow==0.0.9
 Pygments==2.14.0
 pyinstaller==5.13.0
