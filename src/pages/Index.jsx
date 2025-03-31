@@ -43,6 +43,12 @@ const Index = () => {
         return "Error parsing the response.";
       }
 
+      const {
+        date = "Not available",
+        confidence = "Not available",
+        source_text = "Not available",
+      } = parsedResponse;
+
       return `
     Date: ${date}
     Confidence: ${confidence}
