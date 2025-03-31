@@ -35,7 +35,13 @@ const Index = () => {
     console.log(response.answer);
 
     const formatResponse = (response) => {
-      const { date, confidence, source_text } = response;
+      let parsedResponse;
+      try {
+        parsedResponse = JSON.parse(response); // Parse the response string into a JSON object
+      } catch (error) {
+        console.error("Error parsing response:", error);
+        return "Error parsing the response.";
+      }
 
       return `
     Date: ${date}
