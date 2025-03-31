@@ -14,11 +14,12 @@ const FileUpload = ({
   const fileInputRef = React.useRef(null);
   const [isuploading, setIsUploading] = useState(false);
 
+  // Function to handle when the "Browse Files" button is clicked
   const handleBrowseClick = () => {
     setFileName(null);
     fileInputRef.current?.click();
   };
-
+  // Function to handle file selection and uploading
   const handleFile = async (file: File) => {
     try {
       // Check if it's a PDF file
@@ -53,6 +54,7 @@ const FileUpload = ({
     }
   };
 
+  // Handle file drop event
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(true);
@@ -98,6 +100,7 @@ const FileUpload = ({
               onClick={handleBrowseClick}
               variant="outline"
               className="bg-white hover:bg-law-light-gray border-law-gray text-law-blue"
+              disabled={isuploading}
             >
               {isuploading ? "Uploading..." : "Browse Files"}
             </Button>

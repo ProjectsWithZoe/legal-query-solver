@@ -19,11 +19,10 @@ app = FastAPI()
 # CORS setup
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://contracts-project.vercel.app"
-], #change this on prod
+    allow_origins=["https://contracts-project.vercel.app"],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],# Allows all HTTP methods (GET, POST, etc.)
+    allow_headers=["*"],# Allows all headers
 )
 
 # Load environment variables
@@ -36,7 +35,14 @@ supabase = create_client(
     os.getenv('SUPABASE_ANON_KEY')
 )
 
-# Modified to work with Supabase
+# Modified original code to work with Supabase
+"""
+    Downloads a PDF file from Supabase storage and extracts text using pdfplumber.
+    Args:
+        file_path (str): Path of the file in Supabase storage.
+    Returns:
+        str: Extracted text from the PDF.
+    """
 def openFile(file_path):
     try:
         # Get file from Supabase storage
@@ -46,18 +52,32 @@ def openFile(file_path):
         pdf_content = io.BytesIO(response)
         
         text = []
+
+        # Use pdfplumber to extract text from each page
+
         with pdfplumber.open(pdf_content) as pdf:
             for page in pdf.pages:
                 page_text = page.extract_text()
                 if page_text:
                     text.append(page_text)
+
+        # Return the extracted text as a single string
+
         return '\n'.join(text)
     except Exception as e:
         print(f"Error reading PDF: {e}")
         raise
 
-# Your other existing functions remain the same
+
 def chunk_text(text, max_tokens=512):
+    """
+    Splits text into chunks that are no longer than `max_tokens`.
+    Args:
+        text (str): The extracted text from the PDF.
+        max_tokens (int): Maximum token limit per chunk.
+    Returns:
+        list: A list of text chunks.
+    """
     tokenizer = tiktoken.get_encoding('cl100k_base')
     tokens = tokenizer.encode(text)
 
@@ -70,11 +90,29 @@ def chunk_text(text, max_tokens=512):
     return chunks
 
 def generate_embeddings(chunks):
+    """
+    Converts text chunks into vectorized representations using TF-IDF.
+    Args:
+        chunks (list): A list of text chunks.
+    Returns:
+        tuple: (embeddings matrix, TF-IDF vectorizer object)
+    """
     vectorizer = TfidfVectorizer()
     embeddings = vectorizer.fit_transform(chunks).toarray()
     return embeddings, vectorizer
 
 def retrieve_similar_chunks(query, embeddings, chunks, vectorizer, top_k=5):
+    """
+    Finds the most relevant text chunks for a given query using cosine similarity.
+    Args:
+        query (str): The user's search query.
+        embeddings (numpy array): The precomputed embeddings of the text chunks.
+        chunks (list): The original text chunks.
+        vectorizer (TfidfVectorizer): The vectorizer used for embedding generation.
+        top_k (int): The number of top matching chunks to retrieve.
+    Returns:
+        list: A list of the most relevant text chunks.
+    """
     query_vector = vectorizer.transform([query]).toarray()
     
     # Calculate cosine similarity
@@ -86,6 +124,14 @@ def retrieve_similar_chunks(query, embeddings, chunks, vectorizer, top_k=5):
     return similar_chunks
 
 def query_chatgpt(query, similar_chunks):
+    """
+    Sends a query along with retrieved context chunks to OpenAI's GPT model.
+    Args:
+        query (str): The user's question.
+        similar_chunks (list): The most relevant text chunks.
+    Returns:
+        str: The AI-generated answer.
+    """
     context = "\n".join(similar_chunks)
     # Add explicit instructions to prevent hallucinations
     prompt = f"""Based STRICTLY on the provided context from the PDF document, please answer the question.
@@ -126,6 +172,11 @@ class Query(BaseModel):
 
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
+    """
+    Handles file upload, stores it in Supabase, extracts text, and generates embeddings.
+    Returns:
+        dict: File ID and public URL of the uploaded file.
+    """
     try:
         # Read file content
         content = await file.read()
@@ -133,7 +184,6 @@ async def upload_file(file: UploadFile = File(...)):
         file_extension = os.path.splitext(file.filename)[1]
         #print(file_extension)
         unique_filename = f"{uuid.uuid4()}{file_extension}"
-        # Check file type
         
         # Upload to Supabase Storage
         file_path = f"{unique_filename}"
@@ -181,6 +231,11 @@ async def upload_file(file: UploadFile = File(...)):
 
 @app.post("/analyze")
 async def analyze_document(query: Query):
+    """
+    Finds relevant document chunks and answers the query using GPT.
+    Returns:
+        dict: AI-generated answer.
+    """
     try:
         doc_data = pdf_storage.get(query.file_id)
         if not doc_data:

@@ -13,6 +13,7 @@ const Index = () => {
   const [response, setResponse] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Function to handle file upload
   const handleFileUpload = (file) => {
     setUploadedFile(file);
     // Reset the query and response when a new file is uploaded
@@ -20,6 +21,7 @@ const Index = () => {
     setResponse(null);
   };
 
+  // Function to handle query submission
   const handleSubmitQuery = async (queryText) => {
     setQuery(queryText);
     setIsLoading(true);
@@ -28,74 +30,25 @@ const Index = () => {
     console.log("Query submitted:", queryText);
     console.log("Uploaded file:", uploadedFile);
 
+    // Call API to analyze the document
     const response = await analyzeDocument(queryText, uploadedFile);
     console.log(response.answer);
 
-    setResponse(response.answer.replace("{", " ").replace("}", " "));
-    setIsLoading(false);
-    // Show a toast notification for the response
-    toast.success("Response received!");
-    // Show a toast notification for the query
+    const formatResponse = (response) => {
+      const { date, confidence, source_text } = response;
 
-    // Simulate API call to backend
-    /*setTimeout(() => {
-      // This is where you would normally make an API call to your backend
-      // For now, we'll simulate a response
-      
-      const mockResponses = {
-        "What are the key obligations for both parties?": 
-          "Based on the analysis of the uploaded contract, the key obligations are:\n\n" +
-          "For the Client:\n" +
-          "• Payment of $10,000 in monthly installments\n" +
-          "• Providing necessary information and materials\n" +
-          "• Reviewing and approving deliverables within 7 business days\n\n" +
-          "For the Service Provider:\n" +
-          "• Delivering services according to the agreed timeline\n" +
-          "• Maintaining confidentiality of client information\n" +
-          "• Providing weekly progress reports\n" +
-          "• Making revisions as requested (up to 2 rounds per deliverable)",
-          
-        "Identify any termination clauses in this contract.":
-          "The contract contains the following termination clauses:\n\n" +
-          "1. Termination for Convenience: Either party may terminate with 30 days written notice\n\n" +
-          "2. Termination for Cause: Immediate termination is permitted if:\n" +
-          "   • Either party breaches a material term and fails to cure within 15 days\n" +
-          "   • Either party files for bankruptcy or insolvency\n\n" +
-          "3. Effect of Termination:\n" +
-          "   • Client must pay for all services rendered up to termination date\n" +
-          "   • All confidential information must be returned or destroyed\n" +
-          "   • Sections on confidentiality, intellectual property, and limitation of liability survive termination",
-          
-        "Is there a non-compete clause?":
-          "Yes, the contract contains a non-compete clause in Section 8.2.\n\n" +
-          "Key provisions of the non-compete clause:\n\n" +
-          "• The service provider agrees not to directly or indirectly engage in business activities that compete with the client's core business\n" +
-          "• Geographic limitation: Within a 50-mile radius of client's primary place of business\n" +
-          "• Duration: For the term of the agreement and 12 months following termination\n" +
-          "• The clause specifically excludes existing clients of the service provider as listed in Exhibit B\n\n" +
-          "Note: The enforceability of this clause may vary by jurisdiction. In some states, non-compete provisions are subject to stringent requirements or may be unenforceable.",
-          
-        "What is the payment schedule outlined in the contract?":
-          "The payment schedule outlined in the contract is as follows:\n\n" +
-          "• Initial deposit: 25% of total contract value ($2,500) due upon signing\n" +
-          "• Progress payment 1: 25% ($2,500) due upon completion of milestone 1 (delivery of initial draft)\n" +
-          "• Progress payment 2: 25% ($2,500) due upon completion of milestone 2 (delivery of revised draft)\n" +
-          "• Final payment: 25% ($2,500) due upon project completion and client approval\n\n" +
-          "Additional payment terms:\n" +
-          "• All invoices are payable within 15 days of receipt\n" +
-          "• Late payments are subject to a 1.5% monthly interest charge\n" +
-          "• All payments are to be made via bank transfer to the account specified in Exhibit A"
-      };
-      
-      // Generate a response based on the query
-      const defaultResponse = "Based on the analysis of your contract, I couldn't find specific information related to your query. Please try rephrasing your question or ask about a different aspect of the contract.";
-      
-      // Check if there's a mock response for this exact query, otherwise generate a generic response
-      const responseText = mockResponses[queryText] || defaultResponse;
-      
-      setResponse(responseText);
-      setIsLoading(false);
-    }, 2000);*/
+      return `
+    Date: ${date}
+    Confidence: ${confidence}
+    Source Text: ${source_text}
+  `;
+    };
+
+    const responseText = formatResponse(response.answer);
+    setResponse(responseText);
+
+    // Update response after sanitizing curly braces
+    setIsLoading(false);
   };
 
   return (
